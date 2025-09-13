@@ -1,13 +1,13 @@
 import express, { Request, Response } from "express";
 import { StreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/streamableHttp.js";
-import { createWeatherServer } from "./server.js";
-import { registerWeatherTools } from "./tools/weather.js";
+import { createGitHubDocsServer } from "./server.js";
+import { registerGitHubDocsTools } from "./tools/github-docs.js";
 
 // Express handler for stateless Streamable HTTP MCP requests
 async function handleMcpRequest(req: Request, res: Response) {
   try {
-    const server = createWeatherServer();
-    registerWeatherTools(server);
+  const server = createGitHubDocsServer();
+  registerGitHubDocsTools(server);
     const transport = new StreamableHTTPServerTransport({
       sessionIdGenerator: undefined,
     });
@@ -53,7 +53,7 @@ function startHttpServer() {
 
   const port = process.env.PORT ? Number(process.env.PORT) : 3000;
   app.listen(port, () => {
-    console.error(`Weather MCP Server (stateless Streamable HTTP) listening on port ${port}`);
+    console.error(`GitHub Docs MCP Server (stateless Streamable HTTP) listening on port ${port}`);
   });
 }
 
