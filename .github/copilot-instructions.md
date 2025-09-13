@@ -122,7 +122,6 @@ When adding features:
 - Letting unhandled promise rejections occur — always wrap async logic in try/catch at tool boundary.
 
 ## 15. Suggested Backlog (Optional)
-- Add unit tests for `fetchGitHubDocs` truncation & error handling.
 - Add a `search_github_docs` tool (if API supports discovery) to list possible topics.
 - Add caching (in-memory TTL) for frequent repeated topic queries.
 - Provide metric logging hook (timings, success/failure counts).
