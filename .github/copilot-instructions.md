@@ -6,12 +6,11 @@ These instructions define how AI assistants (and human contributors) should work
 - MCP implementation Document: (docs/mcp.md)[docs/mcp.md]
 
 ## 1. Project Overview
-- **Name:** Weather MCP Server (`weather`)
-- **Purpose:** Provide weather alerts and forecast data via the National Weather Service (NWS) API through the Model Context Protocol (MCP) standard I/O transport.
+- **Name:** GitHub Docs MCP Server (`github-docs`)
+- **Purpose:** Provide GitHub documentation excerpts (enterprise site) via the Context7 API through the Model Context Protocol (MCP) standard I/O transport.
 - **Primary Consumers:** AI clients / tooling that speak MCP.
 - **Current Tools:**
-  - `get_alerts(state: string)` — Returns active alerts for a 2‑letter US state code.
-  - `get_forecast(latitude: number, longitude: number)` — Returns multi‑period forecast for a US coordinate.
+  - `get_github_docs(topic: string)` — Returns a truncated (~5KB) excerpt of a GitHub documentation topic.
 
 ## 2. Tech Stack
 - **Language:** TypeScript (compiled to Node.js JavaScript in `build/`)
@@ -40,10 +39,10 @@ When creating a new MCP tool:
 1. Define a clear, snake_case tool name.
 2. Provide a concise description (imperative mood, present tense).
 3. Use `zod` to declare and validate all inputs.
-4. Perform external I/O via helper functions (add new helpers near `makeNWSRequest` or in a new module if it grows).
+4. Perform external I/O via helper helpers (e.g., add beside `fetchGitHubDocs` or a new module if it grows).
 5. Return structured content: prefer a single `type: "text"` block unless multiple modalities are required.
 6. Handle all error paths with safe, user-friendly text (never throw uncaught errors from the handler).
-7. Keep responses concise; large payloads should be summarized if > ~5 KB.
+7. Summarize or truncate payloads if > ~5 KB (consistent with `get_github_docs`).
 
 Template snippet:
 ```ts
@@ -68,15 +67,15 @@ server.tool(
 
 ## 5. Error Handling & Logging
 - **Never** let an exception escape `server.tool` handlers; catch and return a friendly message.
-- Log internal technical details to `stderr` with context tags (e.g., `makeNWSRequest:`).
+- Log internal technical details to `stderr` with context tags (e.g., `fetchGitHubDocs:`).
 - Avoid leaking stack traces or raw HTTP response bodies to the user-facing output.
-- Network interactions should go through `makeNWSRequest` (extend it if necessary for custom headers / methods).
+- Network interactions should go through helper functions (`fetchGitHubDocs` or future equivalents) for consistency and headers.
 
-## 6. API Interaction Guidelines (NWS / External)
-- Set a meaningful `User-Agent` (already defined as `weather-app/1.0` — update if project version changes).
-- Respect rate limits (if adding polling or batch features, implement minimal concurrency and backoff).
-- Validate latitude/longitude bounds (-90..90, -180..180) via `zod`.
-- For new endpoints, create TypeScript interfaces for the JSON shape you consume (narrow to required fields only).
+## 6. API Interaction Guidelines (Context7 / External)
+- Set a meaningful `User-Agent` (currently `github-docs-app/1.0`; update alongside version bumps).
+- Respect rate limits: avoid aggressive parallel topic fetches; consider simple queue/backoff if expanding.
+- Validate input parameters (topic strings non-empty, length bounds if needed) before fetch.
+- For new endpoints, create narrow TypeScript interfaces for only required response fields.
 
 ## 7. Code Style
 - Prefer small, pure helper functions.
@@ -108,7 +107,7 @@ Currently no automated tests. When adding:
 - Avoid adding dependencies that are unmaintained / low-signal. Prefer standard library or well-adopted libraries.
 
 ## 12. Versioning
-- Update the `version` in the server initialization and `package.json` together for user-agent consistency.
+- Update the `version` in server initialization (`createGitHubDocsServer`) and `package.json` together for user-agent & bin consistency.
 - Document changes succinctly in a future `CHANGELOG.md` (not yet present).
 
 ## 13. Documentation Expectations
@@ -123,9 +122,9 @@ When adding features:
 - Letting unhandled promise rejections occur — always wrap async logic in try/catch at tool boundary.
 
 ## 15. Suggested Backlog (Optional)
-- Add unit tests for `makeNWSRequest` fallback behavior.
-- Add a `get_point_metadata` tool to expose grid metadata.
-- Add caching (in-memory TTL) for frequent forecast queries.
+- Add unit tests for `fetchGitHubDocs` truncation & error handling.
+- Add a `search_github_docs` tool (if API supports discovery) to list possible topics.
+- Add caching (in-memory TTL) for frequent repeated topic queries.
 - Provide metric logging hook (timings, success/failure counts).
 - Introduce linting (`eslint + @typescript-eslint`) and formatting (`prettier`).
 
@@ -147,7 +146,7 @@ A PR (or AI change) adding a tool is acceptable if:
 - Schema uses `zod` with descriptive `describe()` for each param.
 - All network failures return a friendly text message.
 - No uncaught exceptions are possible in handler.
-- Output is human-readable and not raw JSON unless explicitly required.
+- Output is human-readable, truncated/summarized if large, and not raw JSON unless explicitly required.
 
 ---
 Maintainers & assistants should keep this document lean and accurate. Remove obsolete sections rather than letting them drift.
